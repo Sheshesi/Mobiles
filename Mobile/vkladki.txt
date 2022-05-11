@@ -1,0 +1,123 @@
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
+
+import android.os.Bundle;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+
+public class MainActivity extends AppCompatActivity {
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_main);
+
+            SectionPagerAdapter pagerAdapter = new SectionPagerAdapter(getSupportFragmentManager(), new Lifecycle() {
+                @Override
+                public void addObserver(@NonNull LifecycleObserver observer) {
+
+                }
+
+                @Override
+                public void removeObserver(@NonNull LifecycleObserver observer) {
+
+                }
+
+                @NonNull
+                @Override
+                public State getCurrentState() {
+                    return null;
+                }
+            });
+
+            ViewPager2 pager = findViewById(R.id.pager);
+            pager.setAdapter(pagerAdapter);
+
+            TabLayout tabLayout = findViewById(R.id.tMain);
+            TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tabLayout, pager,
+                    ((tab, position) -> tab.setText(String.valueOf((position + 228)))));
+            tabLayoutMediator.attach();
+        }
+
+    private static class SectionPagerAdapter extends FragmentStateAdapter {
+        public SectionPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle) {
+            super(fragmentManager, lifecycle);
+        }
+
+        @Override
+        public int getItemCount() {
+            return 3;
+        }
+
+        @NonNull
+        @Override
+        public Fragment createFragment(int position) {
+            switch (position) {
+                case 0:
+                    return new tFirst();
+                case 1:
+                    return new tSecond();
+                case 2:
+                    return new tThird();
+            }
+            return new Fragment();
+        }
+    }
+}
+
+
+public class tFirst extends Fragment {
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_t_first, container, false);
+    }
+}
+
+public class tSecond extends ListFragment {
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                inflater.getContext(),
+                android.R.layout.simple_list_item_1,
+                getResources().getStringArray(R.array.sec_frag_arr));
+        setListAdapter(adapter);
+
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_t_second, container, false);
+    }
+}
+
+public class tThird extends Fragment {
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        TableLayout table = new TableLayout(getActivity());
+        System.out.println(" ");
+        System.out.println(" ");
+        for (int i = 1; i <= 20; i++) {
+            TableRow row = new TableRow(getActivity());
+            for (int j = 1; j <= 15; j++) {
+                TextView tv = new TextView(getActivity());
+                tv.setText(String.valueOf(i * j + 228));
+                row.addView(tv);
+            }
+            table.addView(row);
+        }
+        return table;
+    }
+}

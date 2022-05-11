@@ -1,0 +1,204 @@
+package com.example.myapplication;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+import java.util.Vector;
+import java.lang.reflect.Array;
+import java.util.List;
+import java.util.ListIterator;
+
+public class MainActivity extends AppCompatActivity {
+
+    float p = 0;
+    int score = 0,fail = 0;
+    private SoundPool sounds = new SoundPool(10,AudioManager.STREAM_MUSIC,0);
+    private int sKill,sFail;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(new Panel(this));
+    }
+
+
+    class Panel extends SurfaceView implements SurfaceHolder.Callback {
+
+        private DrawThread drawThread;
+        Vector<juk> vec = new Vector<juk>();
+
+
+        public Panel(Context context){
+            super(context);
+            getHolder().addCallback(this);
+
+            sKill = sounds.load(context, R.raw.kill, 1);
+            sFail = sounds.load(context,R.raw.fail,1);
+            this.setOnTouchListener(new OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    for(int i = 0; i < vec.size(); ++i){
+                        if(vec.get(i).killed) continue;
+                        if(event.getX() > vec.get(i).X &&
+                                event.getX() < vec.get(i).X + 200 &&
+                                event.getY() > vec.get(i).Y &&
+                                event.getY() < vec.get(i).Y + 200){
+                            vec.get(i).killed = true;
+                            sounds.play(sKill, 1.0f, 1.0f, 0, 0, 1.5f);
+                            score++;
+                            return false;
+                        }
+
+                    }
+                    fail++;
+                    sounds.play(sFail, 1.0f, 1.0f, 0, 0, 1.5f);
+                    return false;
+                }
+            });
+
+
+
+        }
+
+
+        public void drawBackGround(Canvas canvas){
+            Bitmap bmp = BitmapFactory.decodeResource(getResources(),R.drawable.background);
+            canvas.drawBitmap(bmp,0,0,new Paint());
+        }
+
+        public Bitmap getBMPbyRotation(int rotation, int type, boolean killed){
+            if(killed) return BitmapFactory.decodeResource(getResources(),R.drawable.kill);
+            if(type == 0){
+                switch (rotation){
+                    case 0:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk0);
+                    case 1:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk2);
+                    case 2:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk4);
+                    case 3:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk6);
+                    default:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk0);
+                }
+            }
+            else{
+                switch (rotation){
+                    case 0:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk1);
+                    case 1:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk3);
+                    case 2:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk5);
+                    case 3:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk7);
+                    default:
+                        return BitmapFactory.decodeResource(getResources(),R.drawable.juk1);
+
+                }
+            }
+
+
+        }
+
+        public void printJuk(Canvas canvas){
+            if(vec.size() == 0) return;
+            for(int i = 0; i < vec.size(); ++i){
+                canvas.drawBitmap(getBMPbyRotation(vec.get(i).rotate,vec.get(i).type,vec.get(i).killed),vec.get(i).X,vec.get(i).Y,new Paint());
+            }
+        }
+
+        int pos = 0;
+        float x = 0,y = 0;
+
+
+        @Override
+        public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
+            drawThread = new DrawThread(getHolder());
+            drawThread.setRunning(true);
+            drawThread.start();
+        }
+
+        @Override
+        public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+
+        }
+
+        @Override
+        public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
+            boolean retry = true;
+            drawThread.setRunning(false);
+            while(retry){
+                try{
+                    drawThread.join();
+                    retry = false;
+                } catch (InterruptedException e) {
+
+                }
+            }
+        }
+
+        class DrawThread extends Thread {
+            private boolean running = false;
+            private SurfaceHolder surfaceHolder;
+
+            public DrawThread(SurfaceHolder surfaceHolder){
+                this.surfaceHolder = surfaceHolder;
+            }
+
+            public  void setRunning(boolean running){
+                this.running = running;
+            }
+
+            @Override
+            public void run() {
+                Canvas canvas;
+                while(running){
+                    canvas = null;
+                    try{
+                        canvas = surfaceHolder.lockCanvas(null);
+                        if(canvas == null)
+                            continue;
+                        drawBackGround(canvas);
+                        printJuk(canvas);
+
+                        if(Math.random() <= 0.1) {
+                            vec.add(new juk(canvas.getWidth(), canvas.getHeight(), (int) (Math.random() * 100) % 2));
+                            (new Thread(vec.lastElement())).start();
+                        }
+                        Paint p = new Paint();
+                        p.setTextSize(50);
+                        canvas.drawText("SCORE : " + score + "   FAIL : " + fail,50,50,p);
+
+
+                    } finally {
+                        if(canvas!=null){
+                            surfaceHolder.unlockCanvasAndPost(canvas);
+
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+}
